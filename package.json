@@ -1,0 +1,7 @@
+{
+  "name": "fontfiles",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "description": "Make Linux font files"
+}
