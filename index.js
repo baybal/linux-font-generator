@@ -79,7 +79,7 @@ for (const [k, v] of files) {
 #define FONTDATAMAX ${fontDataMax}
 
 static const struct font_data fontdata_${fontDescName} = {
-	{ 0, 0, ${fontDataMax}, 0 },
+	{ 0, 0, FONTDATAMAX, 0 },
 	{
 ${process.charsStr}	}
 };
