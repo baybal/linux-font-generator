@@ -86,6 +86,7 @@ ${process.charsStr}	}
 
 const struct font_desc font_${fontDataName} = {
 	.idx = ${fontNameUpperCase}_IDX,
+	.name	= "${fontNameUpperCase}",
 	.width = ${process.charWidth},
 	.height = ${process.charHeight},
 	.charcount = ${process.characters.length},
