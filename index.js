@@ -107,7 +107,7 @@ const struct font_desc font_${fontDataName} = {
 	fontsDesc += `			font_${fontDataName},
 `
 	kconfig += `config FONT_${fontNameUpperCase}
-	bool "Terminus ${sizeStr} ${fontType === 'n' ? 'bold ' : ' '}font (not supported by all drivers)"
+	bool "Terminus ${sizeStr} ${fontType === 'n' ? 'bold ' : ''}font (not supported by all drivers)"
 	depends on FRAMEBUFFER_CONSOLE || DRM_PANIC
 	depends on !SPARC && FONTS || SPARC
 	help
