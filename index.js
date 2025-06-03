@@ -37,12 +37,12 @@ function processIt(str) {
                 if (!arr) break
                 fontLines.noChars = new Uint32Array(new Uint8Array(arr).buffer)[0]
             }
-            else if (i === 6) {
+            else if (i === 7) {
                 const arr = match.match(hexRegex)?.map(c => parseInt(c))
                 if (!arr) break
                 fontLines.charWidth = new Uint32Array(new Uint8Array(arr).buffer)[0]
             }
-            else if (i === 7) {
+            else if (i === 6) {
                 const arr = match.match(hexRegex)?.map(c => parseInt(c))
                 if (!arr) break
                 fontLines.charHeight = new Uint32Array(new Uint8Array(arr).buffer)[0]
@@ -53,29 +53,43 @@ function processIt(str) {
     return fontLines
 }
 
+let fontsc = ''
+let fontsh = ''
+let fontsDesc = ''
+let kconfig = ''
+let makefile = ''
+let kconfigDepends = ''
+
+let i = 12
+
 for (const [k, v] of files) {
 	const filenameSansExtension = k.replace(/\..*$/m, '')
 	const fontType = filenameSansExtension[filenameSansExtension.length - 1]
 	const process = processIt(v)
 	const fontDataMax = process.charHeight * process.charWidth * process.characters.length
+	const sizeStr = `${process.charWidth}x${process.charHeight}`
+	const sizeStrWithType = `${sizeStr}${fontType}`
+	const fontDataName = `ter_${sizeStrWithType}`
+	const fontDescName = `ter${sizeStrWithType}`
+	const fontNameUpperCase = `TER${sizeStr}${fontType.toUpperCase()}`
     const template = `// SPDX-License-Identifier: GPL-2.0
 #include <linux/font.h>
 #include <linux/module.h>
 
 #define FONTDATAMAX ${fontDataMax}
 
-static const struct font_data fontdata_ter${process.charWidth}x${process.charHeight}${fontType} = {
+static const struct font_data fontdata_${fontDescName} = {
 	{ 0, 0, ${fontDataMax}, 0 },
 	{
 ${process.charsStr}	}
 };
 
-const struct font_desc font_ter_${process.charWidth}x${process.charHeight}${fontType} = {
-	.idx = TER${process.charWidth}x${process.charHeight}${fontType.toUpperCase()}_IDX,
+const struct font_desc font_${fontDataName} = {
+	.idx = ${fontNameUpperCase}_IDX,
 	.width = ${process.charWidth},
 	.height = ${process.charHeight},
 	.charcount = ${process.characters.length},
-	.data = fontdata_ter${process.charWidth}x${process.charHeight}${fontType}.data,
+	.data = fontdata_${fontDescName}.data,
 #ifdef __sparc__
 	.pref = 5,
 #else
@@ -84,5 +98,34 @@ const struct font_desc font_ter_${process.charWidth}x${process.charHeight}${font
 };
 `
 
+	fontsc += `#ifdef CONFIG_FONT_${fontNameUpperCase}
+	&font_${fontDataName},
+#endif
+`
+	fontsh += `#define ${fontNameUpperCase}_IDX	${i++}
+`
+	fontsDesc += `			font_${fontDataName},
+`
+	kconfig += `config FONT_${fontNameUpperCase}
+	bool "Terminus ${sizeStr} ${fontType === 'n' ? 'bold ' : ' '}font (not supported by all drivers)"
+	depends on FRAMEBUFFER_CONSOLE || DRM_PANIC
+	depends on !SPARC && FONTS || SPARC
+	help
+	  Terminus Font is a clean, fixed width bitmap font, designed
+	  for long (8 and more hours per day) work with computers.
+
+`
+	kconfigDepends += `	depends on !FONT_${fontNameUpperCase}
+`
+
+	makefile += `font-objs-$(CONFIG_FONT_${fontNameUpperCase})  += ${filenameSansExtension}.o
+`
+
 	writeFileSync(`../processed/${k}`,template)
 }
+
+
+writeFileSync(`../processed/fonts.c`,fontsc)
+writeFileSync(`../processed/Kconfig`,kconfig+kconfigDepends)
+writeFileSync(`../processed/Makefile`,makefile)
+writeFileSync(`../processed/fonts.h`,fontsh+fontsDesc)
